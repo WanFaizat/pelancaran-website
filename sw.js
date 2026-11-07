@@ -1,5 +1,5 @@
 /* Service worker: simpan semua fail pelancaran dalam iPad supaya boleh jalan tanpa internet */
-var CORE = 'pel-core-v3';
+var CORE = 'pel-core-v4';
 var MEDIA = 'pel-media-v1';
 var RT = 'pel-rt-v1';
 var CORE_FILES = ['./', './index.html', './icon.png'];
@@ -54,12 +54,14 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  /* page & ikon: dari simpanan dahulu, kemas kini di belakang bila ada internet */
+  /* page & ikon: ambil versi terbaru bila ada internet, guna simpanan bila offline */
   if (url.origin === location.origin) {
     e.respondWith(caches.open(CORE).then(function (c) {
-      return c.match(req, { ignoreSearch: true }).then(function (hit) {
-        var net = fetch(req).then(function (res) { if (res && res.ok) c.put(req, res.clone()); return res; }).catch(function () { return hit; });
-        return hit || net;
+      return fetch(req, { cache: 'no-store' }).then(function (res) {
+        if (res && res.ok) c.put(req, res.clone());
+        return res;
+      }).catch(function () {
+        return c.match(req, { ignoreSearch: true }).then(function (hit) { return hit || c.match('./index.html'); });
       });
     }));
     return;
