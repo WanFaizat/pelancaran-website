@@ -124,6 +124,11 @@ h1 em{font-style:normal;color:var(--gold)}
 .btn:focus-visible{outline:3px solid var(--gold)}
 #arm{position:fixed;inset:0;z-index:8;background:rgba(2,4,10,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px;text-align:center}
 #arm[hidden]{display:none}
+#fsHelp{max-width:520px;text-align:left;background:rgba(94,242,255,.08);border:1px solid rgba(94,242,255,.4);border-radius:14px;padding:16px 20px;font:600 15px/1.5 var(--fb);color:var(--txt)}
+#fsHelp[hidden]{display:none}
+#fsHelp b{display:block;color:var(--gold);margin-bottom:6px}
+#fsHelp ol{margin:8px 0 8px 20px;padding:0}
+#fsHelp u{text-decoration:none;color:var(--cy)}
 #armBtn{all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;background:var(--gold);color:var(--ink);font:800 26px var(--fd);padding:20px 34px;border-radius:999px;box-shadow:0 0 60px rgba(255,200,60,.45)}
 #armBtn svg{width:30px;height:30px}
 #arm small{font:600 16px var(--fb);color:var(--mu);max-width:460px;line-height:1.4}
@@ -193,7 +198,7 @@ body.scan .vip,body.scan .eb.big{box-shadow:0 0 calc(20px + var(--sp,0)*60px) rg
 <div id="dead"></div>
 <video id="vid" playsinline webkit-playsinline preload="auto"></video>
 <div id="cur"><div class="cl"><i></i></div><div class="cr"><i></i></div></div>
-<div id="arm"><button type="button" id="armBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Ketik untuk sedia</button><button class="btn" id="fsBtn" type="button" style="font-size:18px;padding:14px 22px">Skrin penuh</button><small>Untuk operator: ketik sekali sebelum majlis bermula. Bunyi latar akan terus berjalan. Selepas countdown, skrin akan gelap: tukar ke video pelancaran.</small></div>
+<div id="arm"><button type="button" id="armBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Ketik untuk sedia</button><button class="btn" id="fsBtn" type="button" style="font-size:18px;padding:14px 22px">Skrin penuh</button><div id="fsHelp" hidden><b>Peranti ini tak benarkan skrin penuh dari butang.</b>Guna cara ini (sekali sahaja):<ol><li>Buka page ini di <u>Safari</u></li><li>Tekan ikon <u>Share</u> (kotak dengan anak panah ke atas)</li><li>Pilih <u>Add to Home Screen</u></li><li>Buka dari ikon <u>Pelancaran 5G</u> di Home Screen</li></ol>Dari ikon itu, page terus skrin penuh tanpa bar Safari.</div><small>Untuk operator: ketik sekali sebelum majlis bermula. Bunyi latar akan terus berjalan. Selepas countdown, skrin akan gelap: tukar ke video pelancaran.</small></div>
 
 </div>
 
@@ -308,9 +313,17 @@ $('dead').style.pointerEvents='none';
 function reset(){state='ready';VID.pause();VID.style.display='none';$('flare').classList.remove('go');$('count').style.opacity='';touches={};setP(0);drawFingers(0);$('count').classList.remove('ok');show('ready');$('dead').style.opacity=0;$('dead').style.pointerEvents='none';ac();amb.start()}
 var _dead=dead;dead=function(){_dead();$('dead').style.pointerEvents='auto'};
 /* arm + skrin penuh */
-function fs(){var el=document.documentElement;try{var r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);r&&r.catch&&r.catch(function(){})}catch(e){}}
+function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
+function isApp(){return window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches}
+function fs(){var el=document.documentElement,f=el.requestFullscreen||el.webkitRequestFullscreen||el.webkitEnterFullscreen;if(!f)return false;try{var r=f.call(el);r&&r.catch&&r.catch(function(){})}catch(e){return false}return true}
+function fsHelp(){var h=$('fsHelp');h.hidden=false}
 $('armBtn').addEventListener('click',function(){ac();primeVideo();$('arm').hidden=true;fs();var c=$('cur');setTimeout(function(){braam(.8,36.7,2.5);whoosh(1.6);c.classList.add('open');amb.start()},250);setTimeout(function(){c.classList.add('done')},1900)});
-$('fsBtn').addEventListener('click',function(){if(!document.fullscreenElement&&!document.webkitFullscreenElement)fs();else try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}});
+$('fsBtn').addEventListener('click',function(){if(isApp()){$('fsBtn').textContent='Sudah skrin penuh';return}
+ if(isFs()){try{(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}return}
+ var ok=fs();setTimeout(function(){if(!isFs())fsHelp()},500);if(!ok)fsHelp()});
+if(isApp())$('fsBtn').textContent='Sudah skrin penuh';
+document.addEventListener('fullscreenchange',function(){$('fsBtn').textContent=isFs()?'Keluar skrin penuh':'Skrin penuh'});
+document.addEventListener('webkitfullscreenchange',function(){$('fsBtn').textContent=isFs()?'Keluar skrin penuh':'Skrin penuh'});
 try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(function(){})}catch(e){}
 /* sembunyikan butang skrin penuh jika tidak disokong (iPad dalam iframe / mod Home Screen) */
 
