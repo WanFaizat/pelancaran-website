@@ -126,6 +126,13 @@ h1 em{font-style:normal;color:var(--gold)}
 .btn:focus-visible{outline:3px solid var(--gold)}
 #arm{position:fixed;inset:0;z-index:8;background:rgba(2,4,10,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px;text-align:center}
 #arm[hidden]{display:none}
+#offl{width:min(460px,86vw);font:700 15px var(--fb);color:var(--mu);text-align:left}
+#offl i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:8px;vertical-align:middle;box-shadow:0 0 10px #f59e0b}
+#offl.ok i{background:#22c55e;box-shadow:0 0 10px #22c55e}#offl.ok{color:#bbf7d0}
+#offl.err i{background:#ef4444;box-shadow:0 0 10px #ef4444}#offl.err{color:#fecaca}
+#offl .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}
+#offl .bar b{display:block;height:100%;width:0;background:linear-gradient(90deg,#c9952f,#ffd84a);transition:width .3s}
+#offl.ok .bar{display:none}
 #fsHelp{max-width:520px;text-align:left;background:rgba(94,242,255,.08);border:1px solid rgba(94,242,255,.4);border-radius:14px;padding:16px 20px;font:600 15px/1.5 var(--fb);color:var(--txt)}
 #fsHelp[hidden]{display:none}
 #fsHelp b{display:block;color:var(--gold);margin-bottom:6px}
@@ -201,7 +208,7 @@ body.scan .vip,body.scan .eb.big{box-shadow:0 0 calc(20px + var(--sp,0)*60px) rg
 <video id="vid" playsinline webkit-playsinline muted preload="auto"></video>
 <button id="unmute" type="button" hidden>Tekan untuk bunyi</button>
 <div id="cur"><div class="cl"><i></i></div><div class="cr"><i></i></div></div>
-<div id="arm"><button type="button" id="armBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Ketik untuk sedia</button><small>Untuk operator: ketik sekali sebelum majlis bermula. Bunyi latar akan terus berjalan. Selepas countdown, skrin akan gelap: tukar ke video pelancaran.</small></div>
+<div id="arm"><button type="button" id="armBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Ketik untuk sedia</button><div id="offl"><i></i><span id="offlT">Menyemak fail offline...</span><div class="bar"><b id="offlB"></b></div></div><small>Untuk operator: ketik sekali sebelum majlis bermula. Bunyi latar akan terus berjalan. Selepas countdown, skrin akan gelap: tukar ke video pelancaran.</small></div>
 
 </div>
 
@@ -315,6 +322,31 @@ function go(){state='count';document.body.classList.remove('scan');document.body
 function dead(){state='dead';$('flare').classList.add('go');burst=3;tone(60,1.4,'sine',.9,20);braam(1,30.9,1.4);riserSfx(1.1);
  setTimeout(function(){$('count').style.opacity=0;$('dead').style.transition='opacity 1s ease-in';$('dead').style.opacity=1},500);
  setTimeout(function(){amb.kill();if(AC){try{AC.suspend()}catch(e){}}playVideo();try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}},2000)}
+
+/* ===== OFFLINE: simpan page, ikon dan video dalam iPad ===== */
+(function(){var box=$('offl'),T=$('offlT'),B=$('offlB');
+ function st(cls,txt,p){box.className=cls||'';T.textContent=txt;if(p!=null)B.style.width=Math.round(p*100)+'%'}
+ if(!('serviceWorker' in navigator)||!('caches' in window)||(location.protocol!=='https:'&&location.hostname!=='localhost')){box.style.display='none';return}
+ navigator.serviceWorker.register('sw.js').catch(function(){});
+ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+ var files=[CFG.video,CFG.videoPortrait].filter(Boolean);
+ caches.open('pel-media-v1').then(function(c){
+  var total=0,done=0,sizes={},got={};
+  function key(f){return new URL(f,location.href).pathname}
+  function prog(){var all=0,g=0;files.forEach(function(f){all+=sizes[f]||0;g+=got[f]||0});return all?g/all:0}
+  var seq=Promise.resolve(),missing=[];
+  return Promise.all(files.map(function(f){return c.match(key(f)).then(function(h){if(!h)missing.push(f)})})).then(function(){
+   if(!missing.length){st('ok','Sedia offline: page dan video tersimpan dalam peranti ini.',1);return}
+   if(!navigator.onLine){st('err','Tiada internet dan video belum tersimpan. Sambung internet dulu.');return}
+   st('','Memuat turun video untuk offline... 0%',0);
+   missing.forEach(function(f){seq=seq.then(function(){return fetch(f,{cache:'reload'}).then(function(res){if(!res.ok)throw 0;sizes[f]=+res.headers.get('content-length')||0;
+     var rd=res.body&&res.body.getReader?res.body.getReader():null;if(!rd)return res.blob().then(function(bl){got[f]=bl.size;return bl});
+     var parts=[];got[f]=0;return (function pump(){return rd.read().then(function(r){if(r.done)return new Blob(parts,{type:'video/mp4'});parts.push(r.value);got[f]+=r.value.length;var p=prog();st('','Memuat turun video untuk offline... '+Math.round(p*100)+'%',p);return pump()})})()
+    }).then(function(bl){return c.put(key(f),new Response(bl,{headers:{'Content-Type':'video/mp4','Content-Length':String(bl.size)}}))})})});
+   return seq.then(function(){st('ok','Sedia offline: page dan video tersimpan dalam peranti ini.',1)})
+  })
+ }).catch(function(){st('err','Gagal simpan offline. Pastikan internet stabil, kemudian buka semula page.')})
+})();
 /* reset tersembunyi: ketik 3 kali pantas di skrin gelap */
 var taps=[];$('vid').addEventListener('pointerdown',function(){var n=Date.now();taps=taps.filter(function(x){return n-x<900});taps.push(n);if(taps.length>=3){taps=[];reset()}});
 $('dead').addEventListener('pointerdown',function(){var n=Date.now();taps=taps.filter(function(x){return n-x<900});taps.push(n);if(taps.length>=3){taps=[];reset()}});
