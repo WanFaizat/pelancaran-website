@@ -235,14 +235,16 @@ $('vipName').textContent=CFG.vip;
 var HARI=['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'],BLN=['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
 (function(){var d=new Date(),txt=CFG.date||(HARI[d.getDay()]+', '+d.getDate()+' '+BLN[d.getMonth()]+' '+d.getFullYear());$('dt').innerHTML=txt+(CFG.time?' <span>·</span> '+CFG.time:'')+(CFG.venue?'<b>'+CFG.venue+'</b>':'');$('tag').textContent=CFG.tag||''})();
 var PORT=false;var JX=0,JY=0,VID=$('vid'),vidPrimed=false;
-function vidSrc(){return (navigator.onLine===false&&window.VIDURL)?window.VIDURL:CFG.video}
+function vidSrc(){return CFG.video}
 /* kalau video gagal, cuba sumber satu lagi (link <-> simpanan) */
 VID.addEventListener('error',function(){var cur=VID.getAttribute('src')||'',alt=cur.indexOf('blob:')===0?CFG.video:window.VIDURL;if(!alt||VID.__alt)return;VID.__alt=1;VID.src=alt;VID.load();if(state==='dead'){VID.muted=false;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}});
 var vidReady=false;
 /* buka kunci video secara senyap: main dalam keadaan mute dan terus pause, supaya tiada bunyi bocor sebelum countdown */
-function primeVideo(){if(navigator.onLine===false&&!window.VIDURL&&window.__useBlob){window.__useBlob()}var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=true;VID.volume=0;VID.load();var p=VID.play();VID.pause();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0;vidReady=true}).catch(function(){});
+function primeVideo(){var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=true;VID.volume=0;VID.load();var p=VID.play();VID.pause();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0;vidReady=true}).catch(function(){});
  VID.addEventListener('play',guard)}
 function guard(){if(state!=='dead'){VID.pause();VID.muted=true}}
+/* buka kunci video setiap kali jari sentuh (iPad perlukan sentuhan) */
+function unlockVid(){if(state==='dead'||!VID.paused)return;try{if(!VID.getAttribute('src')){VID.src=CFG.video;VID.load()}VID.muted=true;VID.volume=0;var p=VID.play();if(p&&p.then)p.then(function(){if(state!=='dead'){VID.pause();try{VID.currentTime=0}catch(e){}}}).catch(function(){})}catch(e){}}
 function playVideo(){setTimeout(function(){if(state==='dead'&&(VID.paused||VID.currentTime<0.3)){var u=$('unmute');u.className='big';u.innerHTML='&#9654; MAINKAN VIDEO<small>'+(VID.error?'ralat '+VID.error.code:'rs '+VID.readyState+' ns '+VID.networkState)+'</small>';u.hidden=false}},3000);var src=vidSrc();if(!src)return;if(VID.getAttribute('src')!==src){VID.src=src}VID.removeEventListener('play',guard);document.body.classList.add('vplay');VID.style.display='block';try{VID.currentTime=0}catch(e){}VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}
 function showUnmute(){var u=$('unmute');u.hidden=false}
 VID.addEventListener('ended',function(){VID.style.display='none'});
@@ -320,7 +322,7 @@ function update(){drawFingers(nT());if(state==='ready'&&nT()>=1){state='scan';t0
  else if(state==='ready'||state==='scan')setP(state==='scan'?Math.min(1,(performance.now()-t0)/CFG.hold):0)}
 function mark(e){var m=marks[e.pointerId];if(!m){m=document.createElement('span');m.className='touch';pad.appendChild(m);marks[e.pointerId]=m}var r=pad.getBoundingClientRect();m.style.left=((e.clientX-r.left)/r.width*100)+'%';m.style.top=((e.clientY-r.top)/r.height*100)+'%'}
 function unmark(id){var m=marks[id];if(m){m.remove();delete marks[id]}}
-pad.addEventListener('pointerdown',function(e){ac();try{pad.setPointerCapture(e.pointerId)}catch(_){}touches[e.pointerId]=1;mark(e);update()});
+pad.addEventListener('pointerdown',function(e){ac();unlockVid();try{pad.setPointerCapture(e.pointerId)}catch(_){}touches[e.pointerId]=1;mark(e);update()});
 pad.addEventListener('pointermove',function(e){if(touches[e.pointerId])mark(e)});
 ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){pad.addEventListener(ev,function(e){delete touches[e.pointerId];unmark(e.pointerId);update()})});
 pad.addEventListener('contextmenu',function(e){e.preventDefault()});
@@ -339,26 +341,12 @@ function dead(){state='dead';$('flare').classList.add('go');burst=3;tone(60,1.4,
 /* ===== OFFLINE: simpan page, ikon dan video dalam iPad ===== */
 (function(){var box=$('offl'),T=$('offlT'),B=$('offlB');
  function st(cls,txt,p){box.className=cls||'';T.textContent=txt;if(p!=null)B.style.width=Math.round(p*100)+'%'}
- if(!('serviceWorker' in navigator)||!('caches' in window)||(location.protocol!=='https:'&&location.hostname!=='localhost')){box.style.display='none';return}
- navigator.serviceWorker.register('sw.js').catch(function(){});
- try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
- var files=[CFG.video,CFG.videoPortrait].filter(Boolean);
- caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf('pel-media-')===0&&k!=='pel-media-v2')caches.delete(k)})}).catch(function(){});
- caches.open('pel-media-v2').then(function(c){
-  function key(f){return new URL(f,location.href).pathname}
-  /* video dimainkan terus dari simpanan iPad (blob), tidak melalui service worker */
-  window.__useBlob=function(){caches.open('pel-media-v2').then(useBlob)};
-  function useBlob(c){c.match(key(CFG.video)).then(function(r){return r?r.blob():null}).then(function(b){if(b&&b.size>100000&&!window.VIDURL){window.VIDURL=URL.createObjectURL(b);if(!vidPrimed||VID.paused){vidPrimed=false}}}).catch(function(){})}
-  var seq=Promise.resolve(),missing=[];
-  return Promise.all(files.map(function(f){return c.match(key(f)).then(function(h){if(!h)missing.push(f)})})).then(function(){
-   if(!missing.length){st('ok','Sedia',1);if(navigator.onLine===false)useBlob(c);return}
-   if(!navigator.onLine){st('err','Tiada internet: video belum disimpan');return}
-   var n=0,N=missing.length;st('','Memuat video 1/'+N,0);
-   /* video disalurkan terus ke storan, tidak disimpan dalam memori (elak Safari tutup page) */
-   missing.forEach(function(f){seq=seq.then(function(){st('','Memuat video '+(n+1)+'/'+N,n/N);return fetch(f,{cache:'no-store'}).then(function(res){if(!res.ok)throw 0;return c.put(key(f),res)}).then(function(){n++;st('','Memuat video '+Math.min(n+1,N)+'/'+N,n/N)})})});
-   return seq.then(function(){st('ok','Sedia',1)})
-  })
- }).catch(function(){st('err','Gagal simpan: buka semula dengan internet')})
+ /* sistem offline dibuang: padam service worker & simpanan lama */
+ try{if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})})}catch(e){}
+ try{if('caches' in window)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf('pel-')===0)caches.delete(k)})})}catch(e){}
+ /* semak video boleh dicapai */
+ function chk(){st('','Menyemak',0);fetch(CFG.video,{method:'HEAD',cache:'no-store'}).then(function(r){if(r.ok)st('ok','Sedia',1);else st('err','Video tak dijumpai')}).catch(function(){st('err','Tiada internet')})}
+ chk();window.addEventListener('online',chk);window.addEventListener('offline',function(){st('err','Tiada internet')});
 })();
 /* reset tersembunyi: ketik 3 kali pantas di skrin gelap */
 var taps=[];$('vid').addEventListener('pointerdown',function(){var n=Date.now();taps=taps.filter(function(x){return n-x<900});taps.push(n);if(taps.length>=3){taps=[];reset()}});
