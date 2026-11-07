@@ -1,6 +1,6 @@
 /* Service worker: simpan semua fail pelancaran dalam iPad supaya boleh jalan tanpa internet */
-var CORE = 'pel-core-v4';
-var MEDIA = 'pel-media-v1';
+var CORE = 'pel-core-v5';
+var MEDIA = 'pel-media-v2';
 var RT = 'pel-rt-v1';
 var CORE_FILES = ['./', './index.html', './icon.png'];
 
@@ -10,7 +10,7 @@ self.addEventListener('install', function (e) {
 
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k.indexOf('pel-core-') === 0 && k !== CORE; }).map(function (k) { return caches.delete(k); }));
+    return Promise.all(keys.filter(function (k) { return (k.indexOf('pel-core-') === 0 && k !== CORE) || (k.indexOf('pel-media-') === 0 && k !== MEDIA); }).map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });
 
@@ -18,20 +18,22 @@ self.addEventListener('activate', function (e) {
 function rangeResponse(req, full) {
   var range = req.headers.get('range');
   if (!range) return full;
-  return full.arrayBuffer().then(function (buf) {
+  /* potong Blob tanpa salin keseluruhan video ke memori */
+  return full.blob().then(function (blob) {
     var m = /bytes=(\d*)-(\d*)/.exec(range);
-    var size = buf.byteLength;
-    var start = m && m[1] ? parseInt(m[1], 10) : 0;
-    var end = m && m[2] ? parseInt(m[2], 10) : size - 1;
+    var size = blob.size;
+    var start, end;
+    if (m && m[1] === '' && m[2]) { start = Math.max(0, size - parseInt(m[2], 10)); end = size - 1; }
+    else { start = m && m[1] ? parseInt(m[1], 10) : 0; end = m && m[2] ? parseInt(m[2], 10) : size - 1; }
     if (end >= size) end = size - 1;
-    var part = buf.slice(start, end + 1);
+    var part = blob.slice(start, end + 1, 'video/mp4');
     return new Response(part, {
       status: 206,
       statusText: 'Partial Content',
       headers: {
-        'Content-Type': full.headers.get('Content-Type') || 'video/mp4',
+        'Content-Type': 'video/mp4',
         'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
-        'Content-Length': String(part.byteLength),
+        'Content-Length': String(end - start + 1),
         'Accept-Ranges': 'bytes'
       }
     });
