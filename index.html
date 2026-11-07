@@ -11,6 +11,20 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script>
+/* rekod jejak: simpan langkah dalam iPad, papar selepas buka semula */
+(function(){var K='pellog',L=[];try{L=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}
+var prev=L.slice();L=[];
+window.__log=function(m){var d=new Date();L.push(('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2)+' '+m);if(L.length>60)L.shift();try{localStorage.setItem(K,JSON.stringify(L))}catch(e){}};
+window.addEventListener('error',function(e){__log('RALAT JS: '+(e.message||e))});
+window.addEventListener('unhandledrejection',function(e){__log('RALAT P: '+(e.reason&&e.reason.message||e.reason))});
+window.addEventListener('pagehide',function(){__log('page ditutup')});
+document.addEventListener('visibilitychange',function(){__log('visible='+document.visibilityState)});
+__log('BUKA '+(navigator.standalone?'homescreen':'safari')+' '+innerWidth+'x'+innerHeight+(navigator.serviceWorker&&navigator.serviceWorker.controller?' SW':''));
+window.addEventListener('DOMContentLoaded',function(){var last=prev[prev.length-1]||'';if(!prev.length||/page ditutup|visible=hidden/.test(last)||!/MULA ditekan/.test(prev.join(' ')))return;var b=document.createElement('div');b.id='plog';b.innerHTML='<b>REKOD LEPAS (screenshot & hantar)</b><button type=button>tutup</button><pre></pre>';b.querySelector('pre').textContent=prev.join('\n');b.querySelector('button').onclick=function(){b.remove()};document.body.appendChild(b)});
+})();
+</script>
+<style>#plog{position:fixed;left:10px;top:10px;width:min(520px,90vw);max-height:80vh;overflow:auto;z-index:999999;background:rgba(0,0,0,.92);color:#9ef59e;border:1px solid #3a3;border-radius:10px;padding:10px;font:11px/1.35 ui-monospace,Menlo,monospace}#plog b{color:#ffd84a}#plog button{float:right;background:#333;color:#fff;border:0;border-radius:6px;padding:3px 8px}#plog pre{white-space:pre-wrap;margin-top:6px}</style>
 <style>
 /* Skrin pelancaran futuristik: pentas 1600x900 diskala ikut skrin iPad / projektor */
 :root{--ink:#03060f;--gold:#ffd84a;--gold2:#c9952f;--cy:#5ef2ff;--txt:#f3f1ea;--mu:#8f9bc4;--fd:'Outfit',system-ui,sans-serif;--fb:'Plus Jakarta Sans',system-ui,sans-serif;--fm:'JetBrains Mono',monospace;color-scheme:dark}
@@ -240,12 +254,12 @@ function vidSrc(){return CFG.video}
 VID.addEventListener('error',function(){var cur=VID.getAttribute('src')||'',alt=cur.indexOf('blob:')===0?CFG.video:window.VIDURL;if(!alt||VID.__alt)return;VID.__alt=1;VID.src=alt;VID.load();if(state==='dead'){VID.muted=false;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}});
 var vidReady=false;
 /* buka kunci video secara senyap: main dalam keadaan mute dan terus pause, supaya tiada bunyi bocor sebelum countdown */
-function primeVideo(){var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=true;VID.volume=0;VID.load();var p=VID.play();VID.pause();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0;vidReady=true}).catch(function(){});
+function primeVideo(){__log('MULA ditekan');var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=true;VID.volume=0;VID.load();var p=VID.play();VID.pause();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0;vidReady=true}).catch(function(){});
  VID.addEventListener('play',guard)}
 function guard(){if(state!=='dead'){VID.pause();VID.muted=true}}
 /* buka kunci video setiap kali jari sentuh (iPad perlukan sentuhan) */
-function unlockVid(){if(state==='dead'||!VID.paused)return;try{if(!VID.getAttribute('src')){VID.src=CFG.video;VID.load()}VID.muted=true;VID.volume=0;var p=VID.play();if(p&&p.then)p.then(function(){if(state!=='dead'){VID.pause();try{VID.currentTime=0}catch(e){}}}).catch(function(){})}catch(e){}}
-function playVideo(){setTimeout(function(){if(state==='dead'&&(VID.paused||VID.currentTime<0.3)){var u=$('unmute');u.className='big';u.innerHTML='&#9654; MAINKAN VIDEO<small>'+(VID.error?'ralat '+VID.error.code:'rs '+VID.readyState+' ns '+VID.networkState)+'</small>';u.hidden=false}},3000);var src=vidSrc();if(!src)return;if(VID.getAttribute('src')!==src){VID.src=src}VID.removeEventListener('play',guard);document.body.classList.add('vplay');VID.style.display='block';try{VID.currentTime=0}catch(e){}VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}
+function unlockVid(){__log('sentuh: buka kunci video');if(state==='dead'||!VID.paused)return;try{if(!VID.getAttribute('src')){VID.src=CFG.video;VID.load()}VID.muted=true;VID.volume=0;var p=VID.play();if(p&&p.then)p.then(function(){if(state!=='dead'){VID.pause();try{VID.currentTime=0}catch(e){}}}).catch(function(){})}catch(e){}}
+function playVideo(){__log('playVideo src='+vidSrc()+' rs='+VID.readyState);setTimeout(function(){if(state==='dead'&&(VID.paused||VID.currentTime<0.3)){var u=$('unmute');u.className='big';u.innerHTML='&#9654; MAINKAN VIDEO<small>'+(VID.error?'ralat '+VID.error.code:'rs '+VID.readyState+' ns '+VID.networkState)+'</small>';u.hidden=false}},3000);var src=vidSrc();if(!src)return;if(VID.getAttribute('src')!==src){VID.src=src}VID.removeEventListener('play',guard);document.body.classList.add('vplay');VID.style.display='block';try{VID.currentTime=0}catch(e){}VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}
 function showUnmute(){var u=$('unmute');u.hidden=false}
 VID.addEventListener('ended',function(){VID.style.display='none'});
 $('unmute').addEventListener('click',function(){if(VID.error||VID.readyState===0){VID.src=CFG.video;VID.load()}VID.style.display='block';VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play()});$('unmute').hidden=true;$('unmute').className=''});function fit(){PORT=innerHeight>innerWidth;document.body.classList.toggle('P',PORT);var sw=PORT?900:1600,sh=PORT?1600:900,k=Math.min(innerWidth/sw,innerHeight/sh);K=k;$('stage').style.transform='scale('+k+') translate(-50%,-50%) translate('+JX+'px,'+JY+'px)';cv.width=sw;cv.height=sh;layoutBg()}
@@ -317,7 +331,7 @@ drawFingers(0);
 function setP(p){prg.setAttribute('stroke-dashoffset',(301.6*(1-p)).toFixed(1));var n=nT();st.innerHTML=p>0?('Mengesahkan <b>'+Math.round(p*100)+'%</b>'):'';$('hudSt').textContent=p>0?'Mengimbas biometrik · '+Math.round(p*100)+'%':'Sedia · menunggu pengesahan'}
 function shake(a){JX=(Math.random()-.5)*a;JY=(Math.random()-.5)*a;fit()}
 function tick(){if(state!=='scan')return;var p=Math.min(1,(performance.now()-t0)/CFG.hold);setP(p);humSet(p);burst=Math.max(burst,p*.6);shake(2+p*p*22);document.body.style.setProperty('--sp',p);if(Math.random()<.5)blip();if(navigator.vibrate&&Math.random()<.05)navigator.vibrate(10);if(p>=1){go();return}raf=requestAnimationFrame(tick)}
-function update(){drawFingers(nT());if(state==='ready'&&nT()>=1){state='scan';t0=performance.now();pad.classList.add('on');document.body.classList.add('scan');if(navigator.vibrate)navigator.vibrate([40,60,40,60,80,60,120]);humStart();raf=requestAnimationFrame(tick)}
+function update(){drawFingers(nT());if(state==='ready'&&nT()>=1){state='scan';__log('scan mula');t0=performance.now();pad.classList.add('on');document.body.classList.add('scan');if(navigator.vibrate)navigator.vibrate([40,60,40,60,80,60,120]);humStart();raf=requestAnimationFrame(tick)}
  else if(state==='scan'&&nT()<1){state='ready';cancelAnimationFrame(raf);JX=JY=0;fit();document.body.classList.remove('scan');document.body.style.setProperty('--sp',0);pad.classList.remove('on');humStop();setP(0);st.textContent='';$('hudSt').textContent='Imbasan terganggu · cuba lagi'}
  else if(state==='ready'||state==='scan')setP(state==='scan'?Math.min(1,(performance.now()-t0)/CFG.hold):0)}
 function mark(e){var m=marks[e.pointerId];if(!m){m=document.createElement('span');m.className='touch';pad.appendChild(m);marks[e.pointerId]=m}var r=pad.getBoundingClientRect();m.style.left=((e.clientX-r.left)/r.width*100)+'%';m.style.top=((e.clientY-r.top)/r.height*100)+'%'}
@@ -332,18 +346,18 @@ pad.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter'){delete
 function show(id,ms){var cur=['ready','count'].filter(function(s){return !$(s).hidden})[0];
  function swap(){['ready','count'].forEach(function(s){$(s).hidden=s!==id;$(s).classList.remove('out')});$('ready').classList.remove('go');var n=$(id);n.classList.add('pre');void n.offsetWidth;n.classList.remove('pre')}
  if(!cur||cur===id||!ms){swap();return}$(cur).classList.add('out');setTimeout(swap,ms)}
-function go(){state='count';document.body.classList.remove('scan');document.body.style.setProperty('--sp',0);shake(40);setTimeout(function(){shake(26)},60);setTimeout(function(){shake(12)},140);setTimeout(function(){JX=JY=0;fit()},260);if(navigator.vibrate)navigator.vibrate(300);humStop();pad.classList.remove('on');for(var k in marks)unmark(k);tone(880,.6,'sine',.3,1760);tone(1320,.5,'sine',.15,2640);braam(.8,36.7,2.5);amb.pause();$('hudSt').textContent='Pengesahan berjaya · melancarkan';$('ready').classList.add('go');var cd=$('cd');cd.textContent='';$('count').classList.add('ok');show('count',900);var n=CFG.count;
+function go(){state='count';__log('countdown');document.body.classList.remove('scan');document.body.style.setProperty('--sp',0);shake(40);setTimeout(function(){shake(26)},60);setTimeout(function(){shake(12)},140);setTimeout(function(){JX=JY=0;fit()},260);if(navigator.vibrate)navigator.vibrate(300);humStop();pad.classList.remove('on');for(var k in marks)unmark(k);tone(880,.6,'sine',.3,1760);tone(1320,.5,'sine',.15,2640);braam(.8,36.7,2.5);amb.pause();$('hudSt').textContent='Pengesahan berjaya · melancarkan';$('ready').classList.add('go');var cd=$('cd');cd.textContent='';$('count').classList.add('ok');show('count',900);var n=CFG.count;
  function step(){if(n===0){dead();return}cd.textContent=n;cd.classList.remove('tk');void cd.offsetWidth;cd.classList.add('tk');$('count').classList.remove('ok');shake(10+(CFG.count-n)*4);setTimeout(function(){shake(5)},80);setTimeout(function(){JX=JY=0;fit()},170);if(navigator.vibrate)navigator.vibrate(80);burst=.4+(CFG.count-n)*.16;amb.beat(n,CFG.count);n--;setTimeout(step,1000)}setTimeout(step,1000)}
-function dead(){state='dead';$('flare').classList.add('go');burst=3;tone(60,1.4,'sine',.9,20);braam(1,30.9,1.4);riserSfx(1.1);
+function dead(){state='dead';__log('gelap, tunggu video');$('flare').classList.add('go');burst=3;tone(60,1.4,'sine',.9,20);braam(1,30.9,1.4);riserSfx(1.1);
  setTimeout(function(){$('count').style.opacity=0;$('dead').style.transition='opacity 1s ease-in';$('dead').style.opacity=1},500);
- setTimeout(function(){amb.kill();if(AC){try{AC.suspend()}catch(e){}}playVideo();try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}},2000)}
+ setTimeout(function(){amb.kill();if(AC){try{AC.close();AC=null;hum=null}catch(e){}}playVideo();try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}},2000)}
 
 /* ===== OFFLINE: simpan page, ikon dan video dalam iPad ===== */
 (function(){var box=$('offl'),T=$('offlT'),B=$('offlB');
  function st(cls,txt,p){box.className=cls||'';T.textContent=txt;if(p!=null)B.style.width=Math.round(p*100)+'%'}
  /* sistem offline dibuang: padam service worker & simpanan lama */
- try{if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})})}catch(e){}
- try{if('caches' in window)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf('pel-')===0)caches.delete(k)})})}catch(e){}
+ try{if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){var me=new URL('./',location.href).href;rs.forEach(function(r){if(r.scope===me)r.unregister()})})}catch(e){}
+ try{if('caches' in window)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf('pel-')===0&&k.indexOf('pel-off-')!==0)caches.delete(k)})})}catch(e){}
  /* semak video boleh dicapai */
  function chk(){st('','Menyemak',0);fetch(CFG.video,{method:'HEAD',cache:'no-store'}).then(function(r){if(r.ok)st('ok','Sedia',1);else st('err','Video tak dijumpai')}).catch(function(){st('err','Tiada internet')})}
  chk();window.addEventListener('online',chk);window.addEventListener('offline',function(){st('err','Tiada internet')});
@@ -366,5 +380,5 @@ try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(function(){})
 })();
 </script>
 
-<div id="rot"><svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#ffd84a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M8 3.5a9 9 0 0 1 9 1.5M17 2v3h-3"/></svg><b>Putar iPad ke landscape</b><span>Pelancaran hanya berjalan dalam paparan melintang</span></div></body>
+<div id="rot"><svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#ffd84a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M8 3.5a9 9 0 0 1 9 1.5M17 2v3h-3"/></svg><b>Putar iPad ke landscape</b><span>Pelancaran hanya berjalan dalam paparan melintang</span></div><script>var VID=VID||document.getElementById('vid');['loadstart','loadedmetadata','canplay','playing','pause','waiting','stalled','error','ended','emptied'].forEach(function(n){VID.addEventListener(n,function(){__log('video '+n+(n=='error'&&VID.error?' kod '+VID.error.code:'')+' t='+VID.currentTime.toFixed(1)+' muted='+VID.muted)})})</script></body>
 </html>
