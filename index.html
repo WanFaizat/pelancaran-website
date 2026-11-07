@@ -116,6 +116,8 @@ h1 em{font-style:normal;color:var(--gold)}
 @keyframes curl{0%{transform:translateX(0)}12%{transform:translateX(1.2%)}100%{transform:translateX(-102%)}}
 @keyframes curr{0%{transform:translateX(0)}12%{transform:translateX(-1.2%)}100%{transform:translateX(102%)}}
 #cur.done{display:none}
+#unmute{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:26;all:unset;position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:26;background:rgba(255,216,74,.95);color:#03060f;font:800 18px var(--fb);padding:12px 22px;border-radius:999px;cursor:pointer}
+#unmute[hidden]{display:none}
 #vid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:25;display:none}
 #dead{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20;transition:opacity .08s}
 /* tetapan & arm */
@@ -196,7 +198,8 @@ body.scan .vip,body.scan .eb.big{box-shadow:0 0 calc(20px + var(--sp,0)*60px) rg
  <div id="flare"><i class="r"></i><i class="c"></i><i class="h"></i></div>
 </div>
 <div id="dead"></div>
-<video id="vid" playsinline webkit-playsinline preload="auto"></video>
+<video id="vid" playsinline webkit-playsinline muted preload="auto"></video>
+<button id="unmute" type="button" hidden>Tekan untuk bunyi</button>
 <div id="cur"><div class="cl"><i></i></div><div class="cr"><i></i></div></div>
 <div id="arm"><button type="button" id="armBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>Ketik untuk sedia</button><small>Untuk operator: ketik sekali sebelum majlis bermula. Bunyi latar akan terus berjalan. Selepas countdown, skrin akan gelap: tukar ke video pelancaran.</small></div>
 
@@ -215,9 +218,15 @@ var HARI=['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'],BLN=['Januar
 (function(){var d=new Date(),txt=CFG.date||(HARI[d.getDay()]+', '+d.getDate()+' '+BLN[d.getMonth()]+' '+d.getFullYear());$('dt').innerHTML=txt+(CFG.time?' <span>·</span> '+CFG.time:'')+(CFG.venue?'<b>'+CFG.venue+'</b>':'');$('tag').textContent=CFG.tag||''})();
 var PORT=false;var JX=0,JY=0,VID=$('vid'),vidPrimed=false;
 function vidSrc(){return (innerHeight>innerWidth&&CFG.videoPortrait)?CFG.videoPortrait:CFG.video}
-function primeVideo(){var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0}).catch(function(){})}
-function playVideo(){var src=vidSrc();if(!src)return;if(VID.getAttribute('src')!==src){VID.src=src}VID.style.display='block';VID.currentTime=0;VID.muted=false;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play()})}
-VID.addEventListener('ended',function(){VID.style.display='none'});function fit(){PORT=innerHeight>innerWidth;document.body.classList.toggle('P',PORT);var sw=PORT?900:1600,sh=PORT?1600:900,k=Math.min(innerWidth/sw,innerHeight/sh);K=k;$('stage').style.transform='scale('+k+') translate(-50%,-50%) translate('+JX+'px,'+JY+'px)';cv.width=sw;cv.height=sh;layoutBg()}
+var vidReady=false;
+/* buka kunci video secara senyap: main dalam keadaan mute dan terus pause, supaya tiada bunyi bocor sebelum countdown */
+function primeVideo(){var src=vidSrc();if(!src||vidPrimed)return;vidPrimed=true;VID.src=src;VID.muted=true;VID.volume=0;VID.load();var p=VID.play();VID.pause();if(p&&p.then)p.then(function(){VID.pause();VID.currentTime=0;vidReady=true}).catch(function(){});
+ VID.addEventListener('play',guard)}
+function guard(){if(state!=='dead'){VID.pause();VID.muted=true}}
+function playVideo(){var src=vidSrc();if(!src)return;if(VID.getAttribute('src')!==src){VID.src=src}VID.removeEventListener('play',guard);VID.style.display='block';try{VID.currentTime=0}catch(e){}VID.muted=false;VID.volume=1;var p=VID.play();if(p&&p.catch)p.catch(function(){VID.muted=true;VID.play();showUnmute()})}
+function showUnmute(){var u=$('unmute');u.hidden=false}
+VID.addEventListener('ended',function(){VID.style.display='none'});
+$('unmute').addEventListener('click',function(){VID.muted=false;VID.volume=1;VID.play();$('unmute').hidden=true});function fit(){PORT=innerHeight>innerWidth;document.body.classList.toggle('P',PORT);var sw=PORT?900:1600,sh=PORT?1600:900,k=Math.min(innerWidth/sw,innerHeight/sh);K=k;$('stage').style.transform='scale('+k+') translate(-50%,-50%) translate('+JX+'px,'+JY+'px)';cv.width=sw;cv.height=sh;layoutBg()}
 fit();addEventListener('resize',fit);addEventListener('orientationchange',function(){setTimeout(fit,300)});
 /* latar kolaj */
 var bg=$('bg'),BGI=[];
@@ -310,7 +319,7 @@ function dead(){state='dead';$('flare').classList.add('go');burst=3;tone(60,1.4,
 var taps=[];$('vid').addEventListener('pointerdown',function(){var n=Date.now();taps=taps.filter(function(x){return n-x<900});taps.push(n);if(taps.length>=3){taps=[];reset()}});
 $('dead').addEventListener('pointerdown',function(){var n=Date.now();taps=taps.filter(function(x){return n-x<900});taps.push(n);if(taps.length>=3){taps=[];reset()}});
 $('dead').style.pointerEvents='none';
-function reset(){state='ready';VID.pause();VID.style.display='none';$('flare').classList.remove('go');$('count').style.opacity='';touches={};setP(0);drawFingers(0);$('count').classList.remove('ok');show('ready');$('dead').style.opacity=0;$('dead').style.pointerEvents='none';ac();amb.start()}
+function reset(){state='ready';VID.pause();VID.muted=true;VID.style.display='none';$('unmute').hidden=true;VID.addEventListener('play',guard);$('flare').classList.remove('go');$('count').style.opacity='';touches={};setP(0);drawFingers(0);$('count').classList.remove('ok');show('ready');$('dead').style.opacity=0;$('dead').style.pointerEvents='none';ac();amb.start()}
 var _dead=dead;dead=function(){_dead();$('dead').style.pointerEvents='auto'};
 /* arm + skrin penuh */
 function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
