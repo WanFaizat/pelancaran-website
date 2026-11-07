@@ -1,5 +1,5 @@
 /* Service worker: simpan semua fail pelancaran dalam iPad supaya boleh jalan tanpa internet */
-var CORE = 'pel-core-v5';
+var CORE = 'pel-core-v6';
 var MEDIA = 'pel-media-v2';
 var RT = 'pel-rt-v1';
 var CORE_FILES = ['./', './index.html', './icon.png'];
@@ -45,16 +45,8 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
 
-  /* video: dari simpanan dahulu */
-  if (url.origin === location.origin && /\.mp4$/.test(url.pathname)) {
-    e.respondWith(caches.open(MEDIA).then(function (c) {
-      return c.match(url.pathname, { ignoreSearch: true }).then(function (hit) {
-        if (hit) return rangeResponse(req, hit);
-        return fetch(req);
-      });
-    }));
-    return;
-  }
+  /* video: tidak dikawal di sini; page main video terus dari simpanan (blob) */
+  if (/\.mp4$/.test(url.pathname)) return;
 
   /* page & ikon: ambil versi terbaru bila ada internet, guna simpanan bila offline */
   if (url.origin === location.origin) {
