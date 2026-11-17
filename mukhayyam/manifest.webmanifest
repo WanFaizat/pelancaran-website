@@ -1,12 +1,1 @@
-{
-  "name": "Sijil Mukhayyam Pengetua YIK 2026",
-  "short_name": "Sijil Mukhayyam",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#04273b",
-  "theme_color": "#04273b",
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
-}
+{"name":"Sijil Mukhayyam Pengetua YIK 2026","short_name":"Sijil Mukhayyam","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#04273b","theme_color":"#04273b","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
