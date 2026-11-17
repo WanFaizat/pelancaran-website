@@ -464,17 +464,17 @@ async function draw(){
   });
   x.restore();
 
-  /* no. siri, kekal pada setiap sijil */
+  /* no. siri di bahagian atas sijil */
   x.textAlign = "left";
-  x.font = "500 19px "+SANS_M;
+  x.font = "500 20px "+SANS_M;
   const sline = "NO. SIRI : " + cur.siri;
-  let wsum = 0; for(const ch of sline) wsum += x.measureText(ch).width + 2;
+  let wsum = 0; for(const ch of sline) wsum += x.measureText(ch).width + 2.2;
   x.save();
-  x.fillStyle = "rgba(255,255,255,.07)";
-  x.beginPath(); x.roundRect(138, 2232, wsum + 26, 34, 17); x.fill();
-  x.strokeStyle = "rgba(246,196,69,.34)"; x.lineWidth = 1; x.stroke();
-  x.fillStyle = "rgba(246,196,69,.9)";
-  let px = 151; for(const ch of sline){ x.fillText(ch, px, 2255); px += x.measureText(ch).width + 2; }
+  x.fillStyle = "rgba(255,255,255,.09)";
+  x.beginPath(); x.roundRect(168, 318, wsum + 30, 38, 19); x.fill();
+  x.strokeStyle = "rgba(246,196,69,.4)"; x.lineWidth = 1.2; x.stroke();
+  x.fillStyle = "rgba(246,196,69,.95)";
+  let px = 183; for(const ch of sline){ x.fillText(ch, px, 344); px += x.measureText(ch).width + 2.2; }
   x.restore();
 }
 function flash(){ const c = $("cv"); c.classList.remove("swap"); void c.offsetWidth; c.classList.add("swap"); }
